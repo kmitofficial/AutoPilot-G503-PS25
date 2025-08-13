@@ -1,17 +1,18 @@
 # API Keys
 api_keys:
-  openai: "your-openai-api-key"  # GPT models
-  anthropic: "your-anthropic-api-key"  # Claude models
-  gemini: "your-gemini-api-key"  # Gemini models
-  huggingface: "your-huggingface-api-key"  # To download models from HuggingFace
-
+  # openai: "your-openai-api-key"  # GPT models
+  # anthropic: "your-anthropic-api-key"  # Claude models
+  gemini: "AIzaSyBPv4PIeBFEQsKhZSMk8CCOQUV17mPZCGc"  # Gemini models
+  huggingface: "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"  # To download models from HuggingFace
+  # openrouter: "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"
+  openrouter: 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
 model_path:
-  huggingface: "path/to/huggingface/models"  # directory to store downloaded models
+  huggingface: "C:/Users/Rithwika reddy/.cache/huggingface"  # directory to store downloaded models
 
-# Dataset
+# # Dataset
 data:
-  root: "/path/to/nuscenes"  # Path to nuScenes dataset
-  version: "v1.0-mini"  # Dataset version (v1.0-mini, v1.0-trainval, v1.0-test)
+  root: "C:/Users/karthik/Desktop/ps trails/utkarsh/LightEMMA/data/nuScenes"
+  version: "v1.0-mini" # Dataset version (v1.0-mini, v1.0-trainval, v1.0-test)
   results: "results"  # Directory to store results
 
 # Prediction Parameters (do not change)
@@ -19,3 +20,4 @@ prediction:
   obs_len: 6  # Number of past observations (frames)
   fut_len: 6  # Number of future predictions (frames)
   ext_len: 2  # Extra length for calculations (frames)
+# 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

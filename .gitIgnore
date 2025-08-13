@@ -1,0 +1,81 @@
+# -----------------
+# Python cache & build
+# -----------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+lightemma.egg-info/
+
+# -----------------
+# Virtual environments
+# -----------------
+lightemma-env/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# -----------------
+# Logs
+# -----------------
+*.log
+logs/
+*.out
+*.err
+
+# -----------------
+# Datasets / Models / Large files
+# -----------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.h5
+*.pth
+*.pt
+*.onnx
+*.pb
+*.tflite
+*.bin
+*.npz
+*.npy
+data/
+dataset/
+datasets/
+models/
+weights/
+
+# -----------------
+# OS junk files
+# -----------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.Trash-*
+
+# -----------------
+# IDE files
+# -----------------
+.vscode/
+*.code-workspace
+.idea/
+*.sublime-project
+*.sublime-workspace

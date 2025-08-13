@@ -1,3 +1,28 @@
+WE HAVE IMPLEMENTED THE GIT REPO, PROVIDED TO US, USING THE GEMINI -2.0 MODEL 
+ALSO WE HAVE ADDED ANOTHER FILE CALLED AS predict10.py TO AVOID CONSTANT DATA LIMITATIONS OF FREE USE OF THE GEMINI API
+WE USED THE NUSCENES DATASET - nuScenesv1.0-mini WHICH CONSISTS OF APROX 5GB OF DATA.
+
+WHILE KEEPING THIS PROJECT AS BASE, WE ARE GOING TO MOVE FORWARD, TRY DIFFERENT DATASET ADN MODELS IN THE FORTHCOMING TIME
+
+
+
+
+**Commercial API-based models**:
+- [`gemini-2.0`](https://ai.google.dev/models/gemini): Google Gemini-2.0-Flash
+
+## Changes to the core Code Structure
+- `predict10.py`: Same script as predict but generates only 10 predictions, because of the gemini api limits of free use
+
+
+
+
+
+
+ORIGINAL README.MD
+
+
+
+
 # LightEMMA: Lightweight End-to-end Multimodal Autonomous Driving
 
 [![arXiv](https://img.shields.io/badge/arXiv-2505.00284-red.svg)](https://arxiv.org/abs/2505.00284)
@@ -49,7 +74,6 @@ This end-to-end approach allows LightEMMA to leverage the rich semantic understa
 ### Supported Models
 
 LightEMMA supports the following VLMs (we recommend not using DeepSeek-VL due to its poor performance and environmental incompatibility):
-
 **Commercial API-based models**:
 - [`gpt-4o`](https://platform.openai.com/docs/models/gpt-4o): OpenAI GPT-4o
 - [`gpt-4.1`](https://platform.openai.com/docs/models/gpt-4.1): OpenAI GPT-4.1
