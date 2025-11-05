@@ -1,0 +1,44 @@
+# Core Python Libraries
+numpy
+pandas
+matplotlib
+tqdm
+requests
+jsonschema
+argparse
+
+# Deep Learning & Vision
+torch
+torchvision
+torchaudio
+ultralytics==8.2.70
+opencv-python
+Pillow
+
+# Machine Learning Utilities
+scikit-learn
+scipy
+
+# Communication & Networking
+paho-mqtt
+mavproxy
+paramiko
+
+# Google Gemini API
+google-generativeai>=0.3.0
+
+# Logging & Visualization
+loguru
+colorama
+
+# Optional (for Jupyter/Colab)
+ipython
+notebook
+
+# System / Utilities
+psutil
+pathlib
+
+# Dataset Reference (NuScenes subset used for training)
+# Download Dataset from:
+# https://www.kaggle.com/datasets/melankitask/nuscenes-lightemma-training-data
