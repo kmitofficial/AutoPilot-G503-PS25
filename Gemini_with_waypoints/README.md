@@ -1,113 +1,122 @@
-**AutoPilot VLM – Rover**
-Autonomous rover navigation powered by a Vision–Language Model (Google Gemini) and local perception (camera, GPS, LiDAR).
-The system uses MQTT for real-time communication between the rover (Jetson Nano), the VLM inference module (PC), and a live monitoring dashboard (Flask Web UI).
+**AutoPilot VLM — Rover**
+
+**Overview**
+- **Project:** Lightweight autonomous rover pipeline combining local perception (camera/optional LiDAR/GPS) with a Vision–Language Model (Google Gemini) for high-level driving guidance.
+- **Goal:** Provide a modular, MQTT-based system that runs on a real rover (Jetson Nano) or in simulation on a PC.
+
+**Repository Structure**
+- **`cords.txt`**: Waypoint list (latitude longitude altitude, one row per waypoint).
+- **`rover.py`**: Camera capture, local perception, MQTT publisher (frames/obstacles/status) and motor command executor.
+- **`gemini.py`**: VLM autopilot client — subscribes to `video/stream`, queries Gemini, and publishes `rover/cmd`.
+- **`planner.py`**: Builds a navigation graph from `cords.txt` and publishes `rover/waypoints`.
+- **`web_ui.py`**: Flask dashboard showing live MJPEG camera feed and telemetry.
+- **`requirements.txt`**: Python dependencies for the project.
 
 **Features**
+- **Camera Streaming:** Rover publishes frames to `video/stream` (MQTT) for monitoring and VLM input.
+- **VLM Autopilot:** Gemini consumes frames + context and returns speed/steering/duration commands.
+- **Waypoint Planner:** Uses coordinates in `cords.txt` to build a graph and generate waypoint lists for the rover.
+- **MQTT Communication:** Lightweight pub/sub for `video/stream`, `rover/cmd`, `rover/status`, `rover/obstacle`, `rover/waypoints`, `rover/telemetry`.
+- **Web Dashboard:** Live video + telemetry via `web_ui.py` (Flask + MJPEG/WS combos).
+- **Modular:** Each component (rover, gemini, planner, web UI) runs independently and communicates over MQTT.
 
-Camera Streaming — Rover captures frames and publishes via MQTT
+**Quick Start — Simulation (Windows / PC)**
+1. Create and activate a virtual environment and install dependencies:
 
-VLM Autopilot — Gemini processes frames → generates steering + throttle commands
-
-Waypoint Planner — Builds navigation graph from GPS coordinates
-
-MQTT Communication — Lightweight distributed system
-
-Web Dashboard — Live video feed + telemetry
-
-Modular Codebase — Rover, VLM, UI, and Planner run independently
-
-**Project Structure**
-.
-├── cords.txt          # Waypoint list (lat lon alt)
-├── rover.py           # Publishes camera frames, executes motor commands
-├── gemini.py          # VLM autopilot using Google Gemini API
-├── planner.py         # Graph builder + waypoint planner
-├── web_ui.py          # Flask UI for live video & telemetry
-├── requirements.txt   # Clean Python dependencies
-└── README.md
-
-**Quick Start (Simulation on PC)**
-1️. Create a virtual environment & install dependencies
-'''python -m venv .venv
+```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt'''
+pip install -r requirements.txt
+```
 
-2️. Start the Web UI (live feed + telemetry)
+2. Start the Web UI (live feed + telemetry):
 
-Runs on http://localhost:5000
+```powershell
+python web_ui.py
+# Visit: http://localhost:5000
+```
 
-'''python web_ui.py'''
+3. Start the Rover (simulated camera or local webcam):
 
-3️. Start the Rover pipeline (simulated camera)
+```powershell
 python rover.py
+```
 
-4️. Start the Gemini VLM Autopilot
+4. Start the Gemini VLM autopilot (runs on a PC using your Gemini API key):
 
-Processes incoming frames → sends steering commands:
-
-'''python gemini.py'''
+```powershell
+python gemini.py
+```
 
 **Running on Jetson Nano (Real Rover Mode)**
+- On the rover (Jetson):
+```bash
+python3 planner.py
+python3 rover.py
+```
+- On your PC (VLM + dashboard):
+```bash
+python gemini.py
+python web_ui.py
+```
 
-**On Jetson Nano (robot):**
+**Waypoint Format (`cords.txt`)**
+- Each line: `latitude longitude altitude` (space-separated). Example:
 
-'''python3 planner.py
-python3 rover.py'''
-
-
-**On your PC (VLM + dashboard):**
-
-'''python gemini.py
-python web_ui.py'''
-
-**Waypoint Format (cords.txt)**
-
-Each line must be:
-
-**latitude longitude altitude**
-
-
-Example:
-
+```text
 17.3970873 78.4897846 500.5
+```
 
+**MQTT Topics**
+- **`video/stream`**: Base64-encoded JPEG frames from rover camera.
+- **`rover/cmd`**: Motor command JSON published by VLM (fields: `speed_left`, `speed_right`, `distance_m`, `duration_s`).
+- **`rover/status`**: Rover status events and debugging info.
+- **`rover/obstacle`**: Obstacle reports (on-path / any / estimated distance).
+- **`rover/waypoints`**: Planner publishes waypoints and path metadata.
+- **`rover/telemetry`**: Live telemetry (lat, lon, heading, speed).
 
-Used by planner.py to compute waypoint graph edges.
+**Configuration & API Key**
+- **`config.json`**: Optional config file used by scripts for `mqtt` broker, ports, device paths, and tuning constants.
+- **Gemini API Key:** `gemini.py` needs a valid Google Gemini API key. For safety, put the key in `config.json` or set an environment variable instead of hard-coding. Example (PowerShell):
 
-Install Requirements.txt:
+```powershell
+$env:GENAI_API_KEY = "YOUR_KEY_HERE"
+```
 
-pip install -r requirements.txt
+**Recommended Runtime Order**
+- Ensure your MQTT broker is reachable by all nodes.
+- Start `rover.py` on the rover host first (it publishes camera frames and subscribes to commands).
+- Start `planner.py` to publish waypoints if using structured navigation.
+- Start `gemini.py` (VLM) to consume frames and publish commands.
+- Start `web_ui.py` to monitor live feed and telemetry.
 
-These support camera streaming, LiDAR, autonomous navigation, motor control, and the VLM inference.
-
-**API Key Notice**
-
-gemini.py uses a Google Gemini API Key.
-
-Never commit the API key to GitHub.
-Use environment variables or a config.json (excluded via .gitignore).
-
-**Notes**
-
-If LiDAR, DroneKit, or Serial controllers are unavailable, the system falls back to simulation mode
-
-MQTT topics used:
-
-video/stream
-rover/cmd
-rover/status
-rover/obstacle
-rover/waypoints
-rover/telemetry
+**Troubleshooting & Tips**
+- If you see many `429` quota errors from Gemini, reduce the VLM call rate (`MIN_INTERVAL` in `gemini.py`) or upgrade your quota.
+- On Windows, ensure the camera device index or `cv2.VideoCapture()` source is correct; or set `SHOW_LOCAL=1` to preview frames.
+- Tune `DIST_EST_K`, `PATH_WIDTH_FRAC`, and `PATH_BOTTOM_THRESH` in `config.json` for accurate on-path obstacle detection.
+- Use simulation mode (set `allow_simulation` in `config.json`) if serial motor controllers or LiDAR are not available.
 
 **Future Improvements**
+- YOLO + LiDAR sensor fusion for robust obstacle avoidance.
+- Onboard VLM (Qwen-VL, Phi-3-Vision) to reduce latency and quotas.
+- Improved planner (A*, RRT*, hybrid) and better sampler-based local planning.
+- ROS2 integration and secure MQTT with authentication.
 
-YOLO + LiDAR fusion for obstacle avoidance
+**License & Safety**
+- This repository contains example code intended for research and testing. When running on a real vehicle, ensure you have a safety operator and physical kill-switch.
 
-Onboard LLM/VLM model (Qwen-VL, Phi-3-Vision, LLaVA)
+**Contact / Next Steps**
+- If you want, I can: wire `get_graph.py` into the planner, add web UI controls (start/stop/auton/manual), or switch Gemini key handling to environment variables.
 
-Improved planner (A*, RRT*, hybrid A*)
+---
 
-ROS2 integration
+_Quick copy block (paste anywhere):_
 
-Web dashboard controls (joystick, live map, logs)
+```text
+git clone <repo>
+cd <repo>
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python web_ui.py
+```
