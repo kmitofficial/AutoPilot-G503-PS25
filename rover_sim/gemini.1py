@@ -1,0 +1,247 @@
+# from dotenv import load_dotenv
+# import os
+# import google.generativeai as genai
+
+# load_dotenv()
+# genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# # dummy_gemini.py
+# import socketio, base64, os, google.generativeai as genai, json
+# from io import BytesIO
+# from PIL import Image
+# import time
+
+# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# model = genai.GenerativeModel("gemini-2.0-flash")
+
+# sio = socketio.Client()
+# sio.connect("http://localhost:5000")
+
+# @sio.on("camera_frame")
+# def on_camera_frame(data):
+#     try:
+#         frame_data = data["frame"]
+#         img_bytes = base64.b64decode(frame_data)
+#         image = Image.open(BytesIO(img_bytes))
+
+#         prompt = "Analyze this scene and describe what the rover should do in one short command (e.g. 'move forward', 'turn left', 'stop')."
+
+#         response = model.generate_content([prompt, image])
+#         instruction = response.text.strip()
+
+#         print("Gemini →", instruction)
+
+#         sio.emit("gemini_instruction", {
+#             "progress": 50,
+#             "destination": "Simulation",
+#             "instruction": instruction
+#         })
+
+#         time.sleep(2)
+#     except Exception as e:
+#         print("Error:", e)
+
+# sio.wait()
+import paho.mqtt.client as mqtt
+import cv2
+import numpy as np
+import base64, io, os, re, json, time
+from PIL import Image
+import google.generativeai as genai
+
+# =========================
+# Config
+# =========================
+BROKER = "10.208.218.143"
+PORT = 1883
+TOPIC_VIDEO = "video/stream"
+TOPIC_CMD = "rover/cmd"
+TOPIC_OBS = "rover/obstacle"
+SAVE_DIR = "motion_frames"
+os.makedirs(SAVE_DIR, exist_ok=True)
+
+API_KEY = "AIzaSyBD2tr6IxroK3rykBHYDNmlFhKNF8KmhvI"
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("gemini-2.0-flash")
+print("✅ Gemini model ready")
+
+prev_frame = None
+last_sent = 0.0
+frame_count = 0
+rover_has_obstacle = False
+
+# throttle: minimum seconds between model invocations
+MIN_INTERVAL = 0.8   # seconds (short so commands are short and responsive)
+
+# max duration we allow a command to ask the rover to run (seconds)
+MAX_CMD_DURATION = 1.0
+
+# =========================
+# Helper Functions
+# =========================
+def decode_image(base64_bytes):
+    img_bytes = base64.b64decode(base64_bytes)
+    img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
+def detect_motion(frame, prev_frame, threshold=6000):
+    if prev_frame is None:
+        return True
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+    diff = cv2.absdiff(prev_gray, gray)
+    _, mask = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+    return np.count_nonzero(mask) > threshold
+
+def get_prediction_from_gemini(frame):
+    _, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    img_bytes = buf.tobytes()
+    prompt = """
+You are an autonomous driving AI assistant. 
+Respond ONLY in JSON (no extra explanation):
+{
+  "scene_description": "brief summary",
+  "speed_m_s": <float>,
+  "steering_deg": <float>,
+  "distance_m": <float>
+}
+Rules:
+- If path clear: speed 1–3 m/s, distance 0.5–3 m
+- Turn ± steering_deg if needed (-35 to 35)
+- If obstacle ahead: speed 0, distance 0
+"""
+    try:
+        # send prompt + image
+        result = model.generate_content([prompt, {"mime_type":"image/jpeg","data":img_bytes}])
+        return result.text or ""
+    except Exception as e:
+        print("[Gemini] Error:", e)
+        return ""
+
+def parse_json_output(text):
+    cleaned = re.sub(r"```json|```", "", text).strip()
+    try:
+        data = json.loads(cleaned)
+    except:
+        m = re.search(r"\{.*\}", text, re.S)
+        if not m:
+            return 0.0, 0.0, 0.0, text
+        try:
+            data = json.loads(m.group())
+        except Exception:
+            return 0.0, 0.0, 0.0, text
+    return float(data.get("speed_m_s", 0.0)), float(data.get("steering_deg", 0.0)), float(data.get("distance_m", 0.0)), text
+
+def to_pwm(speed, angle):
+    # speed expected in m/s; we map it to percentage PWM - keep same mapping you used but be robust
+    base = (speed/20.0)*100.0
+    diff = (angle/35.0)*50.0
+    left = np.clip(base + diff, -100, 100)
+    right = np.clip(base - diff, -100, 100)
+    return float(left), float(right)
+
+def publish_cmd(client, l, r, d, duration_s):
+    payload = json.dumps({
+        "timestamp": int(time.time()*1000),
+        "speed_left": l,
+        "speed_right": r,
+        "distance_m": d,
+        "duration_s": duration_s
+    })
+    client.publish(TOPIC_CMD, payload, qos=1)
+    print(f"📡 CMD → L={l:.1f}% R={r:.1f}% Dist={d:.2f}m Dur={duration_s:.2f}s")
+
+# =========================
+# MQTT
+# =========================
+def on_connect(client, userdata, flags, rc):
+    print("[MQTT] Connected rc=", rc)
+    client.subscribe(TOPIC_VIDEO)
+    client.subscribe(TOPIC_OBS)
+
+def on_message(client, userdata, msg):
+    global prev_frame, frame_count, last_sent, rover_has_obstacle
+    try:
+        if msg.topic == TOPIC_OBS:
+            try:
+                d = json.loads(msg.payload.decode())
+                rover_has_obstacle = bool(d.get("obstacle", False))
+            except Exception:
+                # tolerate simple boolean payloads
+                try:
+                    rover_has_obstacle = msg.payload.decode().strip().lower() in ("1", "true", "yes")
+                except Exception:
+                    rover_has_obstacle = False
+            if rover_has_obstacle:
+                print("⛔ Rover reports obstacle — will NOT query Gemini")
+            return
+
+        # video frame
+        frame = decode_image(msg.payload)
+        cv2.imshow("Rover Feed", frame)
+
+        # If rover already reports obstacle, skip everything
+        if rover_has_obstacle:
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                client.disconnect(); cv2.destroyAllWindows()
+            return
+
+        # throttle model invocations
+        if time.time() - last_sent < MIN_INTERVAL:
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                client.disconnect(); cv2.destroyAllWindows()
+            return
+
+        if detect_motion(frame, prev_frame):
+            frame_count += 1
+            prev_frame = frame.copy()
+            path = os.path.join(SAVE_DIR, f"frame_{frame_count}.jpg")
+            cv2.imwrite(path, frame)
+            print(f"\n⚡ Motion detected → {path}")
+
+            start = time.time()
+            raw = get_prediction_from_gemini(frame)
+            s,a,distance, raw_text = parse_json_output(raw)
+            latency = time.time() - start
+            print(f"--- Gemini --- s={s:.2f}, a={a:.1f}, d={distance:.2f}, latency={latency:.2f}s\n{raw_text}\n")
+
+            # compute duration: distance / speed (if speed > 0) but cap to MAX_CMD_DURATION
+            duration_s = 0.0
+            if s > 0.05 and distance > 0.01:
+                # speed s is m/s from the model; protect division by zero and unrealistic numbers
+                safe_speed = max(s, 0.05)
+                duration_s = distance / safe_speed
+                # clip duration to a short value so rover can be responsive
+                duration_s = float(min(duration_s, MAX_CMD_DURATION))
+            else:
+                duration_s = 0.0
+
+            # If model wants to stop (s small) then publish stop
+            if s <= 0.05:
+                publish_cmd(client, 0.0, 0.0, 0.0, 0.0)
+                last_sent = time.time()
+            else:
+                # convert to PWM % and send duration
+                l, r = to_pwm(s, a)
+                publish_cmd(client, l, r, distance, duration_s)
+                last_sent = time.time()
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            client.disconnect(); cv2.destroyAllWindows()
+
+    except Exception as e:
+        print("❌ Frame error:", e)
+
+# =========================
+# Main
+# =========================
+def main():
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.connect(BROKER, PORT, 60)
+    client.loop_forever()
+
+if __name__ == "__main__":
+    main()
+
