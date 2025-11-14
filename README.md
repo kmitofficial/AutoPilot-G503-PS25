@@ -35,7 +35,7 @@ The repo includes experiments across Webots, Gemini, Drive-LM, location-based mo
 
 ````
 
-Each folder contains independent experiments. Most modules run in Jupyter Notebooks, with supporting Python scripts.
+Each folder contains independent experiments. Most modules run in VsCode and colab, with supporting Python scripts.
 
 ---
 
@@ -173,9 +173,16 @@ For issues or contributions, use the **GitHub Issues** tab or contact the projec
 ---
 
 ## 👥 Contributors
+---
+Sarayu – 23BD1A6744  
+Karthik – 23BD1A6704  
+Melankita – 23BD1A6738 
+Rithwika Reddy – 23BD1A6749 
+Surya Akshaya – 23BD1A6723
 
-* Add team members here (Name – Roll No.)
-* Add project guide/faculty (Optional)
+Mentor: Sai Krishna Sir
+
+---
 
 ---
 
