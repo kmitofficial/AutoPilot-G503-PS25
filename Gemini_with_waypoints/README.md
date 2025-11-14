@@ -1,23 +1,22 @@
-🚗 AutoPilot VLM – Rover
-
+**AutoPilot VLM – Rover**
 Autonomous rover navigation powered by a Vision–Language Model (Google Gemini) and local perception (camera, GPS, LiDAR).
 The system uses MQTT for real-time communication between the rover (Jetson Nano), the VLM inference module (PC), and a live monitoring dashboard (Flask Web UI).
 
-📌 Features
+**Features**
 
-🔭 Camera Streaming — Rover captures frames and publishes via MQTT
+Camera Streaming — Rover captures frames and publishes via MQTT
 
-🧠 VLM Autopilot — Gemini processes frames → generates steering + throttle commands
+VLM Autopilot — Gemini processes frames → generates steering + throttle commands
 
-🛰️ Waypoint Planner — Builds navigation graph from GPS coordinates
+Waypoint Planner — Builds navigation graph from GPS coordinates
 
-📡 MQTT Communication — Lightweight distributed system
+MQTT Communication — Lightweight distributed system
 
-🌐 Web Dashboard — Live video feed + telemetry
+Web Dashboard — Live video feed + telemetry
 
-🧱 Modular Codebase — Rover, VLM, UI, and Planner run independently
+Modular Codebase — Rover, VLM, UI, and Planner run independently
 
-📁 Project Structure
+**Project Structure**
 .
 ├── cords.txt          # Waypoint list (lat lon alt)
 ├── rover.py           # Publishes camera frames, executes motor commands
@@ -27,45 +26,45 @@ The system uses MQTT for real-time communication between the rover (Jetson Nano)
 ├── requirements.txt   # Clean Python dependencies
 └── README.md
 
-🚀 Quick Start (Simulation on PC)
-1️⃣ Create a virtual environment & install dependencies
-python -m venv .venv
+**Quick Start (Simulation on PC)**
+1️. Create a virtual environment & install dependencies
+'''python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.txt'''
 
-2️⃣ Start the Web UI (live feed + telemetry)
+2️. Start the Web UI (live feed + telemetry)
 
 Runs on http://localhost:5000
 
-python web_ui.py
+'''python web_ui.py'''
 
-3️⃣ Start the Rover pipeline (simulated camera)
+3️. Start the Rover pipeline (simulated camera)
 python rover.py
 
-4️⃣ Start the Gemini VLM Autopilot
+4️. Start the Gemini VLM Autopilot
 
 Processes incoming frames → sends steering commands:
 
-python gemini.py
+'''python gemini.py'''
 
-🛰️ Running on Jetson Nano (Real Rover Mode)
+**Running on Jetson Nano (Real Rover Mode)**
 
-On Jetson Nano (robot):
+**On Jetson Nano (robot):**
 
-python3 planner.py
-python3 rover.py
+'''python3 planner.py
+python3 rover.py'''
 
 
-On your PC (VLM + dashboard):
+**On your PC (VLM + dashboard):**
 
-python gemini.py
-python web_ui.py
+'''python gemini.py
+python web_ui.py'''
 
-📌 Waypoint Format (cords.txt)
+**Waypoint Format (cords.txt)**
 
 Each line must be:
 
-latitude longitude altitude
+**latitude longitude altitude**
 
 
 Example:
@@ -75,29 +74,20 @@ Example:
 
 Used by planner.py to compute waypoint graph edges.
 
-📦 Requirements
-Flask==3.1.0
-paho-mqtt==2.1.0
-opencv-python==4.10.0.84
-numpy==1.26.0
-Pillow==11.2.1
-google-generativeai==0.8.5
-ultralytics==8.3.29
-rplidar==0.10.0
-dronekit==2.9.2
-pyserial==3.5
+Install Requirements.txt:
 
+pip install -r requirements.txt
 
 These support camera streaming, LiDAR, autonomous navigation, motor control, and the VLM inference.
 
-🔐 API Key Notice
+**API Key Notice**
 
 gemini.py uses a Google Gemini API Key.
 
-⚠️ Never commit the API key to GitHub.
+Never commit the API key to GitHub.
 Use environment variables or a config.json (excluded via .gitignore).
 
-🛠️ Notes
+**Notes**
 
 If LiDAR, DroneKit, or Serial controllers are unavailable, the system falls back to simulation mode
 
@@ -110,7 +100,7 @@ rover/obstacle
 rover/waypoints
 rover/telemetry
 
-📈 Future Improvements
+**Future Improvements**
 
 YOLO + LiDAR fusion for obstacle avoidance
 
