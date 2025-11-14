@@ -1,0 +1,15 @@
+{
+  "mqtt": {
+    "broker": "10.208.218.104",
+    "port": 1883
+  },
+  "ddsm_port": "/dev/ttyACM1",
+  "pixhawk_port": "/dev/ttyACM0",
+  "lidar_port": "/dev/ttyUSB0",
+  "serial_baudrate": 115200,
+  "pixhawk_baudrate": 57600,
+  "yolo_path": "yolov8n.pt",
+  "allow_simulation": false,
+  "show_local_preview": false,
+  "gemini_api_key": "AIzaSyDLE9CH1oU1DvNPTe2imDAet74zi2nj4zw"
+}
